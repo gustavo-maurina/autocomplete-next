@@ -31,6 +31,7 @@ const ServiceSearchFields = () => {
     hasFetched: false,
     values: [],
   });
+  const [noSuggestionsFound, setNoSuggestionsFound] = useState<boolean>();
 
   useEffect(() => {
     const isFormValid = (): void => {
@@ -66,8 +67,8 @@ const ServiceSearchFields = () => {
     });
   };
 
-  const handleSubmit = (e: any) => {
-    e.preventDefault();
+  const handleSubmit = (event: any) => {
+    event.preventDefault();
     let aux = {};
     Object.keys(form.values).map((property) => {
       const value = form.values[property as keyof object];
@@ -86,13 +87,23 @@ const ServiceSearchFields = () => {
     return request.data.result;
   };
 
-  const autoCompleteChangeHandler = async (text: string) => {
+  const autoCompleteInputHandler = async (text: string) => {
+    setText(text);
     let matches: any = [];
+    let valuesToShow: any = [];
     if (text.length > 2) {
       matches = await getCidades(text);
+      if (matches.length === 0) setNoSuggestionsFound(true);
+
+      // limitando a 6 sugestões no autoComplete
+      if (matches.length >= 6) {
+        for (let x = 0; x < 6; x++) {
+          valuesToShow.push(matches[x]);
+        }
+      } else valuesToShow = matches;
     }
-    setSuggestions({ hasFetched: true, values: matches });
-    setText(text);
+
+    setSuggestions({ hasFetched: true, values: valuesToShow });
   };
 
   const onSuggestionClick = ({ Nome, Codigo }: any): void => {
@@ -120,38 +131,46 @@ const ServiceSearchFields = () => {
     );
   };
 
+  const handleBlur = () => {
+    if (text.length === 0) {
+      setForm({
+        ...form,
+        isValid: false,
+        values: { ...form.values, localizacao: "", cod: "" },
+      });
+    }
+    setSuggestions({ ...suggestions, values: [] });
+    setNoSuggestionsFound(false);
+  };
+
   return (
-    <form onSubmit={(e) => handleSubmit(e)}>
+    <form onSubmit={handleSubmit}>
       <div className={`${fieldsStyle.fieldsWrapper}`}>
         <input
           className={fieldsStyle.firstField}
           name="estabelecimento"
           placeholder={t("estabelecimento")}
           type="text"
-          onInput={handleInput}
+          onInput={() =>
+            setTimeout(() => {
+              handleInput;
+            }, 100)
+          }
         />
-        {/* <input
-        id="rightField"
-        placeholder={t("localizacao")}
-        name="localizacao"
-        type="text"
-        onInput={handleInput}
-      /> */}
+      
         <div style={{ position: "relative" }}>
           <input
             placeholder={t("localizacao")}
             type="text"
             value={text}
-            onInput={(e: any) => autoCompleteChangeHandler(e.target.value)}
-            onBlur={() => {
-              if (text.length === 0)
-                setForm({
-                  ...form,
-                  isValid: false,
-                  values: { ...form.values, localizacao: "", cod: "" },
-                });
-            }}
+            onInput={(e: any) => autoCompleteInputHandler(e.target.value)}
+            onBlur={handleBlur}
           />
+          {noSuggestionsFound && (
+            <ul>
+              <li>Nenhum resultado</li>
+            </ul>
+          )}
           {suggestions.values.length ? createSuggestions() : null}
         </div>
 

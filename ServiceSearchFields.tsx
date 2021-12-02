@@ -123,6 +123,7 @@ const ServiceSearchFields = () => {
             style={{ backgroundColor: "white" }}
             key={i}
             onClick={() => onSuggestionClick(suggestion)}
+            onMouseDown={() => onSuggestionClick(suggestion)}
           >
             {suggestion.Nome}
           </li>
